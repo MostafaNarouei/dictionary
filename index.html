@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>Sky D - Dictionary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      direction: rtl;
+      background: linear-gradient(120deg, #cfe9ff 0%, #e0f7ff 100%);
+      padding: 2rem;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.97);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    input, button {
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 500;
+    
+      padding: 0.6rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    
+    input {
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.2s ease-in-out;
+    }
+    input:focus {
+      border-color: #66afe9;
+      outline: none;
+      box-shadow: 0 0 5px rgba(102,175,233,0.6);
+    }
+
+      flex: 1;
+    }
+    .speak-button {
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    
+      font-size: 1rem;
+      padding: 0.3rem 0.5rem;
+      width: auto;
+      display: inline-block;
+      margin-left: 0.3rem;
+      background: olive;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .result {
+      background: #fafafa;
+      padding: 1rem;
+      border-radius: 10px;
+      border-right: 5px solid olive;
+      margin-bottom: 1.5rem;
+    }
+    .term {
+      font-weight: bold;
+      font-size: 1.4rem;
+      color: #e57f00;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 style="text-align:center; color:#446c2f; font-family:'IranNastaliq', 'Vazirmatn', serif; font-size:2rem;">دیکشنری تخصصی اسکای‌دایوینگ</h2>
+<p style="text-align:center; color:#777; font-size:0.9rem;">طراحی شده توسط Mostafa Narouei - D-41713</p>
+    <div style="display:flex; gap:0.5rem; align-items:center; justify-content:center; margin-bottom:1rem;">
+      <input type="text" id="searchInput" placeholder="جستجو... (انگلیسی یا فارسی)">
+      <button class="speak-button" onclick="renderResults()">🔍 جستجو کن</button>
+      <button class="speak-button" onclick="activateAdmin()" style="background:#888;">🛠️</button>
+      <button id="addButton" class="speak-button admin-only" style="display:none;background-color:#00796b;">➕ افزودن واژه جدید</button>
+    </div>
+    <div id="output"></div>
+    
+  </div>
+
+  <script>
+    const dictionary = JSON.parse(localStorage.getItem('skyDict')) || [];
+
+    function renderResults() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const output = document.getElementById('output');
+      const results = dictionary.filter(entry => {
+        return entry.term_en.toLowerCase().includes(query) || entry.term_fa.includes(query);
+      });
+
+      if (results.length === 0) {
+        output.innerHTML = '<p>هیچ موردی یافت نشد.</p>';
+        return;
+      }
+
+      output.innerHTML = results.map(entry => `
+        <div class="result" data-term="${entry.term_en}">
+          <div class="term">${entry.term_en} / ${entry.term_fa}</div>
+          <div><strong>تلفظ فارسی (نوشتاری):</strong> ${entry.pron_fa}</div>
+          <div><strong>تلفظ انگلیسی:</strong> <button class="speak-button" onclick="speakEng('${entry.term_en}')">🔊</button></div>
+          <div><strong>تعریف فارسی:</strong> ${entry.definition_fa}</div>
+          <div><strong>تعریف انگلیسی:</strong> ${entry.definition_en}</div>
+          <div style="margin-top:0.5rem;">
+            <button class="speak-button admin-only" style="display:none;background:#ff9800;" onclick="editWord('${entry.term_en}')">✏️ ویرایش</button>
+            <button class="speak-button admin-only" style="display:none;background:#e53935;" onclick="deleteWord('${entry.term_en}')">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function speakEng(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      speechSynthesis.speak(utter);
+    }
+
+    
+    function activateAdmin() {
+      if (localStorage.getItem('adminMode') === 'true') {
+        document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = 'none');
+        localStorage.removeItem('adminMode');
+        return;
+      }
+
+      const pass = prompt("رمز عبور را وارد کنید:");
+      if (pass === "88026858" || pass === "۸۸۰۲۶۸۵۸") {
+        document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = 'inline-block');
+        localStorage.setItem('adminMode', 'true');
+      } else {
+        alert("رمز نادرست است!");
+      }
+    }
+
+    function editWord(term) {
+      const container = document.querySelector(`[data-term="${term}"]`);
+      const entry = dictionary.find(e => e.term_en === term);
+      
+    
+    if (!entry) return;
+    const existing = container.querySelector('.edit-form');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    document.querySelectorAll('.edit-form').forEach(e => e.remove());
+    
+    
+
+      const form = document.createElement('div');
+      form.className = 'edit-form';
+      form.style = 'background:#fff3cd; padding:1rem; margin-top:1rem; border:1px solid #ffeeba; border-radius:8px;';
+      form.innerHTML = `
+        <input value="${entry.term_en}" id="edit_en_${term}" placeholder="انگلیسی"><br>
+        <input value="${entry.term_fa}" id="edit_fa_${term}" placeholder="فارسی"><br>
+        <input value="${entry.pron_fa}" id="edit_pron_${term}" placeholder="تلفظ"><br>
+        <input value="${entry.definition_en}" id="edit_def_en_${term}" placeholder="تعریف انگلیسی"><br>
+        <input value="${entry.definition_fa}" id="edit_def_fa_${term}" placeholder="تعریف فارسی"><br>
+        <button onclick="saveEdit('${term}')" class="speak-button" style="background:#4caf50;">💾 ذخیره</button>
+        <button onclick="this.parentElement.remove()" class="speak-button" style="background:#999;">❌ انصراف</button>
+      `;
+      container.appendChild(form);
+    }
+
+    function saveEdit(term) {
+      const index = dictionary.findIndex(e => e.term_en === term);
+      if (index === -1) return;
+
+      dictionary[index].term_en = document.getElementById("edit_en_" + term).value;
+      dictionary[index].term_fa = document.getElementById("edit_fa_" + term).value;
+      dictionary[index].pron_fa = document.getElementById("edit_pron_" + term).value;
+      dictionary[index].definition_en = document.getElementById("edit_def_en_" + term).value;
+      dictionary[index].definition_fa = document.getElementById("edit_def_fa_" + term).value;
+
+      localStorage.setItem("skyDict", JSON.stringify(dictionary));
+      renderResults();
+    }
+
+    document.getElementById("addButton").onclick = () => {
+      if (document.getElementById("addForm")) return;
+      const form = document.createElement('div');
+      form.id = "addForm";
+      form.className = "edit-form";
+      form.style = "background:#e0f2f1; padding:1rem; margin-top:1rem; border:1px solid #80cbc4; border-radius:8px; text-align:center;";
+      form.innerHTML = `
+        <input id="new_en" placeholder="انگلیسی"><br>
+        <input id="new_fa" placeholder="فارسی"><br>
+        <input id="new_pron" placeholder="تلفظ"><br>
+        <input id="new_def_en" placeholder="تعریف انگلیسی"><br>
+        <input id="new_def_fa" placeholder="تعریف فارسی"><br>
+        <button onclick="saveNewWord()" class="speak-button" style="background:#4caf50;">➕ افزودن</button>
+        <button onclick="document.getElementById('addForm').remove()" class="speak-button" style="background:#999;">❌ انصراف</button>
+      `;
+      document.querySelector('.container').appendChild(form);
+    };
+
+    function saveNewWord() {
+      const en = document.getElementById("new_en").value.trim();
+      const fa = document.getElementById("new_fa").value.trim();
+      const pron = document.getElementById("new_pron").value.trim();
+      const def_en = document.getElementById("new_def_en").value.trim();
+      const def_fa = document.getElementById("new_def_fa").value.trim();
+      if (!en || !fa) return alert("واژه انگلیسی و فارسی الزامی است");
+
+      dictionary.push({ term_en: en, term_fa: fa, pron_fa: pron, definition_en: def_en, definition_fa: def_fa });
+      localStorage.setItem("skyDict", JSON.stringify(dictionary));
+      renderResults();
+      document.getElementById("addForm").remove();
+    }
+
+    
+    function deleteWord(term) {
+      const confirmBox = document.createElement('div');
+      confirmBox.className = 'edit-form';
+      confirmBox.style = 'background:#fce4ec; padding:1rem; margin-top:1rem; border:1px solid #f8bbd0; border-radius:8px;';
+      confirmBox.innerHTML = `
+        <p>آیا از حذف "${term}" مطمئن هستید؟</p>
+        <button onclick="confirmDelete('${term}', this)" class="speak-button" style="background:#d32f2f;">✅ بله</button>
+        <button onclick="this.parentElement.remove()" class="speak-button" style="background:#999;">❌ خیر</button>
+      `;
+      const container = document.querySelector('[data-term="' + term + '"]');
+      
+    // Remove existing confirm boxes before adding a new one
+    document.querySelectorAll('.confirm-box').forEach(e => e.remove());
+    confirmBox.classList.add('confirm-box');
+    
+    // If the same confirm box already exists, remove it (toggle)
+    const existing = container.querySelector('.confirm-box');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    document.querySelectorAll('.confirm-box').forEach(e => e.remove());
+    confirmBox.classList.add('confirm-box');
+    container.appendChild(confirmBox);
+    
+    
+    }
+
+    function confirmDelete(term, el) {
+      const index = dictionary.findIndex(e => e.term_en === term);
+      if (index > -1) {
+        dictionary.splice(index, 1);
+        localStorage.setItem("skyDict", JSON.stringify(dictionary));
+        renderResults();
+      }
+    }
+
+
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('adminMode') === 'true') {
+        document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = 'inline-block');
+      }
+      renderResults();
+    });
+    
+  </script>
+</body>
+</html>
