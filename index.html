@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>دیکشنری اسکای‌دایوینگ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      direction: rtl;
+      background: linear-gradient(120deg, #cfe9ff 0%, #e0f7ff 100%);
+      padding: 2rem;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.97);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .result {
+      background: #fafafa;
+      padding: 1rem;
+      border-radius: 10px;
+      border-right: 5px solid olive;
+      margin-bottom: 1.5rem;
+    }
+    .term {
+      font-weight: bold;
+      font-size: 1.4rem;
+      color: #e57f00;
+    }
+    #addWordForm {
+      display: none;
+    }
+    .speak-button {
+      font-size: 0.9rem;
+      padding: 0.3rem 0.6rem;
+      background: olive;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    h2, h3 {
+      text-align: center;
+      color: #446c2f;
+    }
+    button {
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #e57f00 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+      <div style="text-align:center; font-size:0.95rem; margin-top:-1rem; margin-bottom:1.5rem; color:#446c2f">
+      طراحی و توسعه توسط مصطفی ناروئی – D-41713 <br>
+      <button id="adminToggle" onclick="activateAdmin()" title="ورود مدیر"
+        style="background:none; border:none; font-size:1.6rem; cursor:pointer; margin-top:0.4rem;">🛠️</button><br>
+    
+           
+      </span>
+    </div>
+    <h2>دیکشنری تخصصی اسکای‌دایوینگ</h2>
+    <input type="text" id="searchInput" placeholder="جستجو... (انگلیسی یا فارسی)">
+        <button class="speak-button" onclick="renderResults()" style="margin-bottom: 1rem; background-color: #e57f00;">🔍 جستجو کن</button>
+    <div id="output"></div>
+<div style="text-align:center; margin-top: 1.5rem;">
+  <button id="addButton" class="speak-button" onclick="checkAddPermission()" style="display:none;" style="background-color:#00796b;">➕ افزودن واژه جدید</button>
+</div>
+<div id="addFormContainer" style="display:none;" style="display:none; margin-top: 1rem;" class="result">
+  <h3>➕ افزودن واژه جدید</h3>
+  <input id="new_term_en" placeholder="واژه انگلیسی">
+  <input id="new_term_fa" placeholder="ترجمه فارسی">
+  <input id="new_pron_fa" placeholder="تلفظ فارسی (نوشتاری)">
+  <input id="new_definition_en" placeholder="تعریف انگلیسی">
+  <input id="new_definition_fa" placeholder="تعریف فارسی">
+    <button onclick="saveNewWord()" style="background:#4caf50;">💾 ذخیره واژه</button>
+</div>
+
+  </div>
+  <script>
+    document.getElementById('searchInput').addEventListener('input', renderResults);
+    document.getElementById('categoryFilter').addEventListener('change', renderResults);
+    window.addEventListener('DOMContentLoaded', renderResults);
+  
+function checkAddPermission() {
+  if (editUnlocked) {
+    document.getElementById('addFormContainer').style.display = 'block';
+  }
+}
+
+function saveNewWord() {
+  const entry = {
+    term_en: document.getElementById('new_term_en').value.trim(),
+    term_fa: document.getElementById('new_term_fa').value.trim(),
+    pron_fa: document.getElementById('new_pron_fa').value.trim(),
+    definition_en: document.getElementById('new_definition_en').value.trim(),
+    definition_fa: document.getElementById('new_definition_fa').value.trim(),
+    category: document.getElementById('new_category').value.trim()
+  };
+
+  if (!entry.term_en || !entry.term_fa) {
+    alert("واژه انگلیسی و ترجمه فارسی الزامی است.");
+    return;
+  }
+
+  const current = JSON.parse(localStorage.getItem('skyDict')) || [];
+  current.push(entry);
+  localStorage.setItem('skyDict', JSON.stringify(current));
+  alert("واژه با موفقیت ذخیره شد.");
+  setTimeout(() => renderResults(), 200);
+}
+
+
+function activateAdmin() {
+  const pw = prompt("رمز دسترسی مدیر:");
+  if (pw === "88026858" || pw === "۸۸۰۲۶۸۵۸") {
+    editUnlocked = true;
+    document.getElementById('addButton').style.display = 'block';
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+    document.getElementById('addFormContainer').style.display = 'block';
+  } else {
+    alert("رمز اشتباه است.");
+  }
+}
+
+</script>
+<!-- محتوای داخلی در جای خود باقی می‌ماند -->
+<script>
+  function speakEng(text) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    speechSynthesis.speak(utter);
+  }
+
+  const dictionary = JSON.parse(localStorage.getItem('skyDict')) || [];
+
+  function renderResults() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    // دسته‌بندی حذف شد
+    const output = document.getElementById('output');
+
+    const results = dictionary.filter(entry => {
+      const matchesSearch = entry.term_en.toLowerCase().includes(query) || entry.term_fa.includes(query);
+      return matchesSearch;
+    });
+
+    if (results.length === 0) {
+      output.innerHTML = '<p>هیچ موردی یافت نشد.</p>';
+      return;
+    }
+
+    output.innerHTML = results.map(entry => `
+      <div class="result">
+        <div class="term">${entry.term_en} / ${entry.term_fa}</div>
+        <div><strong>تلفظ فارسی (نوشتاری):</strong> ${entry.pron_fa}</div>
+        <div><strong>🔈 تلفظ انگلیسی:</strong> <button class="speak-button" onclick="speakEng('${entry.term_en}')">🔊</button></div>
+        <div><strong>تعریف فارسی:</strong> ${entry.definition_fa}</div>
+        <div><strong>تعریف انگلیسی:</strong> ${entry.definition_en}</div>
+        
+      </div>
+        <button onclick='openEditPanel("${entry.term_en}")' class="speak-button admin-only" style="display:none;background:#ff9800;margin-top:10px;">✏️ ویرایش / حذف</button>
+      `).join('');
+  }
+let editUnlocked = false;
+
+function openEditPanel(term) {
+  if (!editUnlocked) {
+    const password = prompt("رمز دسترسی برای ویرایش یا حذف:");
+    if (password !== "88026858" && password !== "۸۸۰۲۶۸۵۸") {
+      alert("دسترسی غیرمجاز! فقط مدیر مجاز است.");
+      return;
+    }
+    editUnlocked = true;
+  }
+  const entryIndex = dictionary.findIndex(e => e.term_en === term);
+  if (entryIndex === -1) return;
+  const entry = dictionary[entryIndex];
+
+  const formHtml = `
+    <div class='result' style='background:#fff3cd;border:1px solid #ffecb5;'>
+      <h3>✏️ ویرایش / حذف واژه: ${entry.term_en}</h3>
+      <input id='edit_term_fa' value='${entry.term_fa}'>
+      <input id='edit_pron_fa' value='${entry.pron_fa}'>
+      <input id='edit_definition_en' value='${entry.definition_en}'>
+      <input id='edit_definition_fa' value='${entry.definition_fa}'>
+            <button onclick='saveEdit(${entryIndex})' style='background:#007bff'>💾 ذخیره</button>
+      <button onclick='deleteEntry(${entryIndex})' style='background:#dc3545'>🗑️ حذف</button>
+    </div>`;
+
+  output.innerHTML = formHtml + output.innerHTML;
+}
+
+function saveEdit(index) {
+  dictionary[index].term_fa = document.getElementById('edit_term_fa').value;
+  dictionary[index].pron_fa = document.getElementById('edit_pron_fa').value;
+  dictionary[index].definition_en = document.getElementById('edit_definition_en').value;
+  dictionary[index].definition_fa = document.getElementById('edit_definition_fa').value;
+  dictionary[index].category = document.getElementById('edit_category').value;
+  localStorage.setItem('skyDict', JSON.stringify(dictionary));
+  renderResults();
+}
+
+function deleteEntry(index) {
+  if (confirm("آیا مطمئنی که می‌خوای این واژه حذف بشه؟")) {
+    dictionary.splice(index, 1);
+    localStorage.setItem('skyDict', JSON.stringify(dictionary));
+    renderResults();
+  }
+}
+
+function checkAddPermission() {
+  if (editUnlocked) {
+    document.getElementById('addFormContainer').style.display = 'block';
+  }
+}
+
+function saveNewWord() {
+  const entry = {
+    term_en: document.getElementById('new_term_en').value.trim(),
+    term_fa: document.getElementById('new_term_fa').value.trim(),
+    pron_fa: document.getElementById('new_pron_fa').value.trim(),
+    definition_en: document.getElementById('new_definition_en').value.trim(),
+    definition_fa: document.getElementById('new_definition_fa').value.trim(),
+    category: document.getElementById('new_category').value.trim()
+  };
+
+  if (!entry.term_en || !entry.term_fa) {
+    alert("واژه انگلیسی و ترجمه فارسی الزامی است.");
+    return;
+  }
+
+  const current = JSON.parse(localStorage.getItem('skyDict')) || [];
+  current.push(entry);
+  localStorage.setItem('skyDict', JSON.stringify(current));
+  alert("واژه با موفقیت ذخیره شد.");
+  setTimeout(() => renderResults(), 200);
+}
+
+
+function activateAdmin() {
+  const pw = prompt("رمز دسترسی مدیر:");
+  if (pw === "88026858" || pw === "۸۸۰۲۶۸۵۸") {
+    editUnlocked = true;
+    document.getElementById('addButton').style.display = 'block';
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+    document.getElementById('addFormContainer').style.display = 'block';
+  } else {
+    alert("رمز اشتباه است.");
+  }
+}
+
+</script>
+</body>
+</html>
